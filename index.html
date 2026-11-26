@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Coração</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+
+      --bg-abyssal: #020003;
+      --bg-void-purple: #0a0009;
+      --color-dried-blood: #3d000c;
+      --color-deep-crimson: #8a031e;
+      --color-arterial-red: #c9082a;
+      --color-ghost-silver: #b8aab0;
+      --color-aged-gold: #6e5a44;
+
+      --font-gothic: 'UnifrakturMaguntia', serif;
+      --font-ornamental: 'Cinzel Decorative', serif;
+      --font-editorial: 'Cormorant Garamond', serif;
+
+      --beat-duration: 2.2s;
+      --heart-scale: 1;
+      --arch-scale: 1;
+    }
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-abyssal);
+      background-image: radial-gradient(
+        circle at 50% 48%,
+        #17010b 0%,
+        var(--bg-void-purple) 48%,
+        var(--bg-abyssal) 100%
+      );
+      color: var(--color-ghost-silver);
+      font-family: var(--font-editorial);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      isolation: isolate;
+    }
+
+    .parchment-grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 25;
+      opacity: 0.045;
+      background-image: radial-gradient(rgba(184, 170, 176, 0.35) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+
+    .abyssal-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 24;
+      background: radial-gradient(
+        circle at center,
+        transparent 38%,
+        rgba(2, 0, 3, 0.78) 82%,
+        #000000 100%
+      );
+    }
+
+    #particle-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .crimson-aura {
+      position: absolute;
+      width: 660px;
+      height: 660px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(138, 3, 30, 0.28) 0%,
+        rgba(61, 0, 12, 0.18) 44%,
+        rgba(20, 0, 18, 0.06) 68%,
+        transparent 76%
+      );
+      filter: blur(44px);
+      pointer-events: none;
+      z-index: 2;
+      animation: auraPulse var(--beat-duration) infinite ease-in-out;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+
+    .stage.is-excited .crimson-aura {
+      background: radial-gradient(
+        circle,
+        rgba(201, 8, 42, 0.38) 0%,
+        rgba(138, 3, 30, 0.24) 46%,
+        rgba(35, 0, 24, 0.08) 70%,
+        transparent 78%
+      );
+    }
+
+    .cathedral-arch {
+      position: absolute;
+      width: 580px;
+      height: 760px;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.26;
+      transform: scale(var(--arch-scale));
+    }
+
+    .victorian-frame {
+      position: fixed;
+      inset: 18px;
+      border: 1px solid rgba(138, 3, 30, 0.28);
+      box-shadow:
+        inset 0 0 45px rgba(0, 0, 0, 0.92),
+        0 0 25px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .victorian-frame::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(110, 90, 68, 0.22);
+    }
+
+    .corner-filigree {
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      fill: none;
+      stroke: var(--color-aged-gold);
+      stroke-width: 1.1;
+      opacity: 0.65;
+      filter: drop-shadow(0 0 6px rgba(138, 3, 30, 0.45));
+    }
+
+    .corner-filigree.tl { top: -2px; left: -2px; }
+    .corner-filigree.tr { top: -2px; right: -2px; transform: scaleX(-1); }
+    .corner-filigree.bl { bottom: -2px; left: -2px; transform: scaleY(-1); }
+    .corner-filigree.br { bottom: -2px; right: -2px; transform: scale(-1, -1); }
+
+    .editorial-header {
+      position: fixed;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 22;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .editorial-title {
+      font-family: var(--font-ornamental);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--color-ghost-silver);
+      text-shadow: 0 0 12px rgba(138, 3, 30, 0.65);
+      opacity: 0.85;
+    }
+
+    .editorial-subtitle {
+      font-family: var(--font-editorial);
+      font-style: italic;
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      color: var(--color-aged-gold);
+      opacity: 0.8;
+    }
+
+    .editorial-footer {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-editorial);
+      font-style: italic;
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      color: rgba(184, 170, 176, 0.45);
+      z-index: 22;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .heart-viewport {
+      position: relative;
+      width: 620px;
+      height: 680px;
+      z-index: 10;
+      cursor: pointer;
+      transform: scale(var(--heart-scale));
+      animation: lubDubHeartbeat var(--beat-duration) infinite ease-in-out;
+      filter: drop-shadow(0 20px 42px rgba(0, 0, 0, 0.96));
+      transition: filter 0.4s ease;
+    }
+
+    .heart-viewport:hover {
+      filter: drop-shadow(0 20px 48px rgba(138, 3, 30, 0.35));
+    }
+
+    .love-glyph {
+      position: absolute;
+      white-space: nowrap;
+      transform: translate(-50%, -50%);
+      letter-spacing: 0.25px;
+      will-change: opacity, filter;
+      transition: color 0.35s ease, text-shadow 0.35s ease;
+    }
+
+    .layer-muscle {
+      font-family: var(--font-gothic);
+      font-weight: 400;
+      z-index: 1;
+    }
+
+    .layer-contour {
+      font-family: var(--font-ornamental);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      z-index: 2;
+    }
+
+    .layer-coronary {
+      font-family: var(--font-gothic);
+      font-weight: 400;
+      z-index: 3;
+      animation: spectralFlicker 3.6s infinite alternate ease-in-out;
+    }
+
+    .shockwave-ring {
+      position: absolute;
+      top: 52%;
+      left: 50%;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 1px solid rgba(201, 8, 42, 0.55);
+      box-shadow: 0 0 25px rgba(201, 8, 42, 0.35), inset 0 0 15px rgba(138, 3, 30, 0.3);
+      transform: translate(-50%, -50%) scale(0.4);
+      pointer-events: none;
+      z-index: 8;
+      animation: shockwaveExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes lubDubHeartbeat {
+      0%, 100% {
+        transform: scale(var(--heart-scale));
+      }
+      10% {
+        transform: scale(calc(var(--heart-scale) * 1.055));
+      }
+      20% {
+        transform: scale(calc(var(--heart-scale) * 0.988));
+      }
+      31% {
+        transform: scale(calc(var(--heart-scale) * 1.036));
+      }
+      54% {
+        transform: scale(var(--heart-scale));
+      }
+    }
+
+    @keyframes auraPulse {
+      0%, 100% {
+        transform: scale(0.93);
+        opacity: 0.65;
+      }
+      14% {
+        transform: scale(1.12);
+        opacity: 1;
+      }
+      32% {
+        transform: scale(1.04);
+        opacity: 0.85;
+      }
+    }
+
+    @keyframes spectralFlicker {
+      0%, 100% {
+        opacity: 0.88;
+        filter: brightness(0.95);
+      }
+      40% {
+        opacity: 1;
+        filter: brightness(1.28);
+      }
+      52% {
+        opacity: 0.72;
+        filter: brightness(0.82);
+      }
+      78% {
+        opacity: 0.98;
+        filter: brightness(1.18);
+      }
+    }
+
+    @keyframes shockwaveExpand {
+      0% {
+        opacity: 0.85;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(4.6);
+      }
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --heart-scale: 0.62;
+        --arch-scale: 0.68;
+      }
+
+      .victorian-frame {
+        inset: 10px;
+      }
+
+      .corner-filigree {
+        width: 60px;
+        height: 60px;
+      }
+
+      .editorial-header {
+        top: 22px;
+      }
+
+      .editorial-title {
+        font-size: 0.78rem;
+        letter-spacing: 0.28em;
+      }
+    }
+
+    @media (max-width: 460px) {
+      :root {
+        --heart-scale: 0.50;
+        --arch-scale: 0.55;
+      }
+
+      .editorial-footer {
+        font-size: 0.68rem;
+        letter-spacing: 0.15em;
+      }
+    }
+  </style>
+</head>
+<body>
+ 
+  <main class="stage" id="stage" aria-label="Anatomia Gótica do Coração">
+
+    <div class="parchment-grain" aria-hidden="true"></div>
+    <div class="abyssal-vignette" aria-hidden="true"></div>
+
+    <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+    <div class="crimson-aura" aria-hidden="true"></div>
+      <circle cx="290" cy="148" r="36" stroke="rgba(138, 3, 30, 0.45)" stroke-width="1"/>
+      <circle cx="290" cy="148" r="22" stroke="rgba(110, 90, 68, 0.35)" stroke-width="0.8"/>
+      <path d="M290 112 L290 184 M254 148 L326 148 M264.5 122.5 L315.5 173.5 M315.5 122.5 L264.5 173.5" stroke="rgba(184, 170, 176, 0.22)" stroke-width="0.7"/>
+      <defs>
+        <linearGradient id="archStroke" x1="290" y1="18" x2="290" y2="755" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#8a031e" stop-opacity="0.8"/>
+          <stop offset="55%" stop-color="#3d000c" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#020003" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="victorian-frame" aria-hidden="true">
+      <svg class="corner-filigree tl" viewBox="0 0 100 100">
+        <path d="M2 92 L2 18 Q2 2 18 2 L92 2"/>
+        <path d="M10 76 L10 24 Q10 10 24 10 L76 10" stroke="rgba(138, 3, 30, 0.55)"/>
+        <path d="M2 46 C24 46, 46 24, 46 2"/>
+        <path d="M16 16 C28 16, 33 28, 22 34 C14 38, 10 26, 18 22"/>
+        <circle cx="14" cy="14" r="2.2" fill="#8a031e"/>
+      </svg>
+      <svg class="corner-filigree tr" viewBox="0 0 100 100">
+        <path d="M2 92 L2 18 Q2 2 18 2 L92 2"/>
+        <path d="M10 76 L10 24 Q10 10 24 10 L76 10" stroke="rgba(138, 3, 30, 0.55)"/>
+        <path d="M2 46 C24 46, 46 24, 46 2"/>
+        <path d="M16 16 C28 16, 33 28, 22 34 C14 38, 10 26, 18 22"/>
+        <circle cx="14" cy="14" r="2.2" fill="#8a031e"/>
+      </svg>
+      <svg class="corner-filigree bl" viewBox="0 0 100 100">
+        <path d="M2 92 L2 18 Q2 2 18 2 L92 2"/>
+        <path d="M10 76 L10 24 Q10 10 24 10 L76 10" stroke="rgba(138, 3, 30, 0.55)"/>
+        <path d="M2 46 C24 46, 46 24, 46 2"/>
+        <path d="M16 16 C28 16, 33 28, 22 34 C14 38, 10 26, 18 22"/>
+        <circle cx="14" cy="14" r="2.2" fill="#8a031e"/>
+      </svg>
+      <svg class="corner-filigree br" viewBox="0 0 100 100">
+        <path d="M2 92 L2 18 Q2 2 18 2 L92 2"/>
+        <path d="M10 76 L10 24 Q10 10 24 10 L76 10" stroke="rgba(138, 3, 30, 0.55)"/>
+        <path d="M2 46 C24 46, 46 24, 46 2"/>
+        <path d="M16 16 C28 16, 33 28, 22 34 C14 38, 10 26, 18 22"/>
+        <circle cx="14" cy="14" r="2.2" fill="#8a031e"/>
+      </svg>
+    </div>
+
+    <section
+      class="heart-viewport"
+      id="heart-container"
+      role="img"
+      aria-label="Coração anatômico hiperdetalhado formado pela frase 'te amo' em caligrafia gótica"
+      title="Toque para acelerar o pulso"
+    ></section>
+
+  <script>
+ 
+    class GothicHeartRenderer {
+      constructor(containerElement, options = {}) {
+        this.container = containerElement;
+        this.width = options.width || 620;
+        this.height = options.height || 680;
+        this.phrase = options.phrase || 'te amo';
+        this.stepX = options.stepX || 23;
+        this.stepY = options.stepY || 10.5;
+
+        this.palettes = {
+          muscle: ['#26000a', '#3d000c', '#1e0018', '#4f0314', '#2e0210'],
+          contourBlood: ['#8a031e', '#690016', '#520011'],
+          contourSilver: '#b8aab0',
+          coronary: ['#c9082a', '#e01134', '#9e021e']
+        };
+
+        this.shapeCanvas = this._createOffscreenCanvas();
+        this.detailCanvas = this._createOffscreenCanvas();
+      }
+
+      _createOffscreenCanvas() {
+        const canvas = document.createElement('canvas');
+        canvas.width = this.width;
+        canvas.height = this.height;
+        return canvas;
+      }
+
+      _drawAnatomicalSilhouette(ctx) {
+        ctx.fillStyle = '#ffffff';
+
+        ctx.beginPath();
+        ctx.moveTo(192, 225);
+        ctx.lineTo(186, 95);
+        ctx.lineTo(234, 95);
+        ctx.lineTo(238, 220);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(195, 410);
+        ctx.lineTo(192, 485);
+        ctx.lineTo(232, 485);
+        ctx.lineTo(236, 420);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(255, 220);
+        ctx.bezierCurveTo(240, 125, 285, 72, 355, 84);
+        ctx.bezierCurveTo(410, 95, 432, 152, 415, 225);
+        ctx.lineTo(368, 230);
+        ctx.bezierCurveTo(380, 175, 362, 138, 335, 138);
+        ctx.bezierCurveTo(308, 138, 300, 172, 305, 220);
+        ctx.closePath();
+        ctx.fill();
+
+        const aorticBranches = [
+          { x: 292, y: 40, w: 20, h: 60, angle: -0.2 },
+          { x: 330, y: 32, w: 17, h: 60, angle: -0.05 },
+          { x: 368, y: 40, w: 17, h: 60, angle: 0.14 }
+        ];
+        aorticBranches.forEach((branch) => {
+          ctx.save();
+          ctx.translate(branch.x, branch.y);
+          ctx.rotate(branch.angle);
+          ctx.fillRect(-branch.w / 2, 0, branch.w, branch.h);
+          ctx.restore();
+        });
+
+        ctx.beginPath();
+        ctx.moveTo(285, 255);
+        ctx.bezierCurveTo(298, 185, 375, 162, 482, 172);
+        ctx.lineTo(486, 208);
+        ctx.bezierCurveTo(415, 202, 365, 215, 342, 265);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(478, 252, 24, 11, 0.2, 0, Math.PI * 2);
+        ctx.ellipse(472, 284, 22, 10, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(255, 205);
+        ctx.bezierCurveTo(175, 188, 118, 242, 126, 338);
+        ctx.bezierCurveTo(135, 448, 232, 548, 338, 612);
+        ctx.bezierCurveTo(432, 565, 486, 452, 474, 332);
+        ctx.bezierCurveTo(466, 258, 422, 210, 365, 205);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      _drawCoronaryMap(dCtx) {
+        dCtx.strokeStyle = '#ff0000';
+        dCtx.lineCap = 'round';
+
+        dCtx.lineWidth = 10;
+        dCtx.beginPath();
+        dCtx.moveTo(140, 295);
+        dCtx.quadraticCurveTo(275, 325, 455, 285);
+        dCtx.stroke();
+
+        dCtx.lineWidth = 9;
+        dCtx.beginPath();
+        dCtx.moveTo(315, 265);
+        dCtx.bezierCurveTo(305, 365, 325, 475, 338, 595);
+        dCtx.stroke();
+
+        dCtx.lineWidth = 5;
+        const branches = [
+          [[312, 330], [375, 365], [435, 415]],
+          [[316, 405], [385, 445], [425, 495]],
+          [[322, 475], [370, 515], [395, 555]],
+          [[310, 355], [245, 385], [195, 430]],
+          [[315, 430], [255, 465], [225, 505]],
+          [[225, 305], [190, 355], [165, 395]]
+        ];
+
+        branches.forEach((pts) => {
+          dCtx.beginPath();
+          dCtx.moveTo(pts[0][0], pts[0][1]);
+          dCtx.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
+          dCtx.stroke();
+        });
+      }
+
+      _pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      render() {
+        const shapeCtx = this.shapeCanvas.getContext('2d');
+        const detailCtx = this.detailCanvas.getContext('2d');
+
+        this._drawAnatomicalSilhouette(shapeCtx);
+        this._drawCoronaryMap(detailCtx);
+
+        const shapeData = shapeCtx.getImageData(0, 0, this.width, this.height).data;
+        const detailData = detailCtx.getImageData(0, 0, this.width, this.height).data;
+
+        const isInside = (x, y) => {
+          const ix = Math.floor(x);
+          const iy = Math.floor(y);
+          if (ix < 0 || ix >= this.width || iy < 0 || iy >= this.height) return false;
+          return shapeData[(iy * this.width + ix) * 4 + 3] > 128;
+        };
+
+        const isCoronary = (x, y) => {
+          const ix = Math.floor(x);
+          const iy = Math.floor(y);
+          if (ix < 0 || ix >= this.width || iy < 0 || iy >= this.height) return false;
+          return detailData[(iy * this.width + ix) * 4] > 100;
+        };
+
+        const isEdge = (x, y) => {
+          const r = 6;
+          return (
+            !isInside(x - r, y) ||
+            !isInside(x + r, y) ||
+            !isInside(x, y - r) ||
+            !isInside(x, y + r)
+          );
+        };
+
+        const fragment = document.createDocumentFragment();
+
+        for (let y = 25; y < this.height - 30; y += this.stepY) {
+          const rowIndex = Math.floor(y / this.stepY);
+          const rowOffset = rowIndex % 2 === 0 ? 0 : this.stepX / 2;
+
+          for (let x = 100; x < this.width - 90; x += this.stepX) {
+            const px = x + rowOffset;
+            if (!isInside(px, y)) continue;
+
+            const glyph = document.createElement('span');
+            glyph.className = 'love-glyph';
+            glyph.textContent = this.phrase;
+            glyph.style.left = `${px}px`;
+            glyph.style.top = `${y}px`;
+
+            if (isCoronary(px, y)) {
+
+              const color = this._pickRandom(this.palettes.coronary);
+              glyph.classList.add('layer-coronary');
+              glyph.style.fontSize = '9.3px';
+              glyph.style.color = color;
+              glyph.style.textShadow = `0 0 4px ${color}, 0 0 12px #6b0018, 0 0 20px #24001c`;
+              glyph.style.animationDelay = `${(Math.random() * 3.2).toFixed(2)}s`;
+            } else if (isEdge(px, y)) {
+
+              glyph.classList.add('layer-contour');
+              glyph.style.fontSize = '8px';
+              if (Math.random() > 0.72) {
+                glyph.style.color = this.palettes.contourSilver;
+                glyph.style.textShadow = '0 0 6px rgba(184, 170, 176, 0.55), 0 0 12px #3d000c';
+              } else {
+                const color = this._pickRandom(this.palettes.contourBlood);
+                glyph.style.color = color;
+                glyph.style.textShadow = `0 0 4px ${color}, 0 0 10px #26000a`;
+              }
+            } else {
+
+              const color = this._pickRandom(this.palettes.muscle);
+              glyph.classList.add('layer-muscle');
+              glyph.style.fontSize = '8.6px';
+              glyph.style.color = color;
+              glyph.style.textShadow = `0 0 3px ${color}, 0 0 8px #120007`;
+            }
+
+            fragment.appendChild(glyph);
+          }
+        }
+
+        this.container.innerHTML = '';
+        this.container.appendChild(fragment);
+      }
+    }
+
+    class GothicParticleSystem {
+      constructor(canvasElement) {
+        this.canvas = canvasElement;
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.animationFrameId = null;
+
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this._initParticles();
+      }
+
+      resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width * dpr;
+        this.canvas.height = this.height * dpr;
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      _initParticles() {
+        this.particles = [];
+
+        for (let i = 0; i < 42; i++) {
+          this.particles.push({
+            type: 'ember',
+            x: Math.random() * this.width,
+            y: Math.random() * this.height,
+            radius: Math.random() * 1.8 + 0.6,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: -(Math.random() * 0.45 + 0.15),
+            alpha: Math.random() * 0.6 + 0.2,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+
+        for (let i = 0; i < 16; i++) {
+          this.particles.push({
+            type: 'petal',
+            x: Math.random() * this.width,
+            y: Math.random() * this.height,
+            size: Math.random() * 5 + 4,
+            vx: (Math.random() - 0.5) * 0.35,
+            vy: Math.random() * 0.4 + 0.2,
+            angle: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 0.02,
+            swayPhase: Math.random() * Math.PI * 2,
+            alpha: Math.random() * 0.45 + 0.25
+          });
+        }
+      }
+
+      _updateAndDraw(time) {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.width, this.height);
+
+        for (const p of this.particles) {
+          if (p.type === 'ember') {
+            p.x += p.vx + Math.sin(time * 0.001 + p.phase) * 0.15;
+            p.y += p.vy;
+
+            if (p.y < -10) {
+              p.y = this.height + 10;
+              p.x = Math.random() * this.width;
+            }
+
+            const flicker = 0.65 + 0.35 * Math.sin(time * 0.003 + p.phase);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(201, 8, 42, ${p.alpha * flicker})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#c9082a';
+            ctx.fill();
+            ctx.restore();
+          } else if (p.type === 'petal') {
+            p.x += p.vx + Math.sin(time * 0.0008 + p.swayPhase) * 0.35;
+            p.y += p.vy;
+            p.angle += p.spin;
+
+            if (p.y > this.height + 15) {
+              p.y = -15;
+              p.x = Math.random() * this.width;
+            }
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size);
+            ctx.quadraticCurveTo(p.size * 0.8, 0, 0, p.size);
+            ctx.quadraticCurveTo(-p.size * 0.8, 0, 0, -p.size);
+            ctx.fillStyle = `rgba(61, 0, 12, ${p.alpha})`;
+            ctx.strokeStyle = `rgba(138, 3, 30, ${p.alpha * 0.8})`;
+            ctx.lineWidth = 0.6;
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        this.animationFrameId = requestAnimationFrame((t) => this._updateAndDraw(t));
+      }
+
+      start() {
+        if (!this.animationFrameId) {
+          this.animationFrameId = requestAnimationFrame((t) => this._updateAndDraw(t));
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const stage = document.getElementById('stage');
+      const heartContainer = document.getElementById('heart-container');
+      const particleCanvas = document.getElementById('particle-canvas');
+
+      const heartRenderer = new GothicHeartRenderer(heartContainer);
+      heartRenderer.render();
+
+      const particleSystem = new GothicParticleSystem(particleCanvas);
+      particleSystem.start();
+
+      heartContainer.addEventListener('mouseenter', () => {
+        stage.classList.add('is-excited');
+        document.documentElement.style.setProperty('--beat-duration', '1.45s');
+      });
+
+      heartContainer.addEventListener('mouseleave', () => {
+        stage.classList.remove('is-excited');
+        document.documentElement.style.setProperty('--beat-duration', '2.2s');
+      });
+
+      const triggerPulseShockwave = () => {
+        const wave = document.createElement('div');
+        wave.className = 'shockwave-ring';
+        heartContainer.appendChild(wave);
+
+        wave.addEventListener('animationend', () => {
+          wave.remove();
+        });
+      };
+
+      heartContainer.addEventListener('click', triggerPulseShockwave);
+    });
+  </script>
+</body>
+</html>
